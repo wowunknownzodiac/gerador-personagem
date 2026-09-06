@@ -1,1 +1,336 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tormenta 20 - Área do Usuário</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #151515;
+      color: #f4f4f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 460px;
+      background: #242424;
+      border: 1px solid #3a3a3a;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      color: #e1b84b;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      flex: 1;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #555;
+      border-radius: 8px;
+      background: #181818;
+      color: white;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      background: #b52b2b;
+      color: white;
+    }
+
+    button:hover {
+      filter: brightness(1.1);
+    }
+
+    .secondary {
+      background: #444;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #mensagem {
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #181818;
+      min-height: 40px;
+      white-space: pre-line;
+    }
+
+    .area-usuario {
+      text-align: center;
+    }
+
+    .email-logado {
+      color: #e1b84b;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>Tormenta 20</h1>
+
+    <div id="area-auth">
+
+      <div class="tabs">
+        <button id="btn-tab-login" onclick="mostrarLogin()">Entrar</button>
+        <button id="btn-tab-cadastro" class="secondary" onclick="mostrarCadastro()">Criar conta</button>
+      </div>
+
+      <div id="form-login">
+        <h2>Entrar</h2>
+
+        <input
+          id="login-email"
+          type="email"
+          placeholder="Seu e-mail"
+        />
+
+        <input
+          id="login-senha"
+          type="password"
+          placeholder="Sua senha"
+        />
+
+        <button onclick="fazerLogin()">Entrar</button>
+      </div>
+
+      <div id="form-cadastro" class="hidden">
+        <h2>Criar conta</h2>
+
+        <input
+          id="cadastro-email"
+          type="email"
+          placeholder="Seu e-mail"
+        />
+
+        <input
+          id="cadastro-senha"
+          type="password"
+          placeholder="Crie uma senha"
+        />
+
+        <button onclick="fazerCadastro()">Cadastrar</button>
+      </div>
+
+    </div>
+
+    <div id="area-usuario" class="area-usuario hidden">
+      <h2>Área do usuário</h2>
+
+      <p>Você está conectado como:</p>
+
+      <p
+        id="usuario-email"
+        class="email-logado"
+      ></p>
+
+      <p>Em breve suas fichas de Tormenta 20 aparecerão aqui.</p>
+
+      <button onclick="fazerLogout()">Sair</button>
+    </div>
+
+    <div id="mensagem"></div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL =
+      "https://bbcudrklvgrmksjstlsu.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_ejDBDTRN1TAZRiEqmXqoBw_RKzjw0J3";
+
+    const supabaseClient =
+      supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function exibirMensagem(texto) {
+      document.getElementById("mensagem").textContent = texto;
+    }
+
+    function mostrarLogin() {
+      document.getElementById("form-login").classList.remove("hidden");
+      document.getElementById("form-cadastro").classList.add("hidden");
+
+      document.getElementById("btn-tab-login").classList.remove("secondary");
+      document.getElementById("btn-tab-cadastro").classList.add("secondary");
+
+      exibirMensagem("");
+    }
+
+    function mostrarCadastro() {
+      document.getElementById("form-cadastro").classList.remove("hidden");
+      document.getElementById("form-login").classList.add("hidden");
+
+      document.getElementById("btn-tab-cadastro").classList.remove("secondary");
+      document.getElementById("btn-tab-login").classList.add("secondary");
+
+      exibirMensagem("");
+    }
+
+    async function fazerCadastro() {
+      const email =
+        document.getElementById("cadastro-email").value.trim();
+
+      const senha =
+        document.getElementById("cadastro-senha").value;
+
+      if (!email || !senha) {
+        exibirMensagem("Preencha e-mail e senha.");
+        return;
+      }
+
+      exibirMensagem("Criando conta...");
+
+      const { data, error } =
+        await supabaseClient.auth.signUp({
+          email: email,
+          password: senha
+        });
+
+      if (error) {
+        exibirMensagem(
+          "Erro ao criar conta:\n" + error.message
+        );
+        return;
+      }
+
+      if (data.session) {
+        exibirMensagem("Conta criada com sucesso.");
+        await atualizarTela();
+      } else {
+        exibirMensagem(
+          "Conta criada.\nVerifique seu e-mail para confirmar o cadastro."
+        );
+      }
+    }
+
+    async function fazerLogin() {
+      const email =
+        document.getElementById("login-email").value.trim();
+
+      const senha =
+        document.getElementById("login-senha").value;
+
+      if (!email || !senha) {
+        exibirMensagem("Preencha e-mail e senha.");
+        return;
+      }
+
+      exibirMensagem("Entrando...");
+
+      const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: senha
+        });
+
+      if (error) {
+        exibirMensagem(
+          "Não foi possível entrar:\n" + error.message
+        );
+        return;
+      }
+
+      exibirMensagem("Login realizado com sucesso.");
+
+      await atualizarTela();
+    }
+
+    async function fazerLogout() {
+      const { error } =
+        await supabaseClient.auth.signOut();
+
+      if (error) {
+        exibirMensagem(
+          "Erro ao sair:\n" + error.message
+        );
+        return;
+      }
+
+      exibirMensagem("Você saiu da sua conta.");
+
+      await atualizarTela();
+    }
+
+    async function atualizarTela() {
+      const {
+        data: { session }
+      } = await supabaseClient.auth.getSession();
+
+      const areaAuth =
+        document.getElementById("area-auth");
+
+      const areaUsuario =
+        document.getElementById("area-usuario");
+
+      if (session && session.user) {
+        areaAuth.classList.add("hidden");
+        areaUsuario.classList.remove("hidden");
+
+        document.getElementById("usuario-email").textContent =
+          session.user.email;
+      } else {
+        areaUsuario.classList.add("hidden");
+        areaAuth.classList.remove("hidden");
+      }
+    }
+
+    supabaseClient.auth.onAuthStateChange(
+      async () => {
+        await atualizarTela();
+      }
+    );
+
+    atualizarTela();
+  </script>
+
+</body>
+</html>
