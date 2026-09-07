@@ -71,11 +71,6 @@
       font-size: 16px;
     }
 
-    input:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
-
     button {
       width: 100%;
       padding: 12px;
@@ -99,6 +94,13 @@
 
     .gold {
       background: #a8781b;
+    }
+
+    .link-button {
+      background: transparent;
+      color: #e1b84b;
+      padding: 8px;
+      font-weight: normal;
     }
 
     .hidden {
@@ -152,7 +154,6 @@
 
     <h1>Tormenta 20</h1>
 
-    <!-- ÁREA DE LOGIN / CADASTRO -->
     <div id="area-auth">
 
       <div class="tabs">
@@ -165,43 +166,71 @@
       <div id="form-login">
         <h2>Entrar</h2>
 
-        <input
-          id="login-email"
-          type="email"
-          placeholder="Seu e-mail"
-        />
-
-        <input
-          id="login-senha"
-          type="password"
-          placeholder="Sua senha"
-        />
+        <input id="login-email" type="email" placeholder="Seu e-mail" />
+        <input id="login-senha" type="password" placeholder="Sua senha" />
 
         <button onclick="fazerLogin()">Entrar</button>
+
+        <button class="link-button" onclick="mostrarRecuperacao()">
+          Esqueci minha senha
+        </button>
       </div>
 
       <div id="form-cadastro" class="hidden">
         <h2>Criar conta</h2>
 
+        <input id="cadastro-email" type="email" placeholder="Seu e-mail" />
+        <input id="cadastro-senha" type="password" placeholder="Crie uma senha" />
+
+        <button onclick="fazerCadastro()">Cadastrar</button>
+      </div>
+
+      <div id="form-recuperacao" class="hidden">
+        <h2>Recuperar senha</h2>
+
+        <p>Informe o e-mail da sua conta.</p>
+
         <input
-          id="cadastro-email"
+          id="recuperacao-email"
           type="email"
           placeholder="Seu e-mail"
         />
 
-        <input
-          id="cadastro-senha"
-          type="password"
-          placeholder="Crie uma senha"
-        />
+        <button onclick="enviarRecuperacaoSenha()">
+          Enviar e-mail de recuperação
+        </button>
 
-        <button onclick="fazerCadastro()">Cadastrar</button>
+        <button class="secondary" onclick="mostrarLogin()">
+          Voltar
+        </button>
       </div>
 
     </div>
 
 
-    <!-- ÁREA LOGADA -->
+    <div id="area-nova-senha" class="hidden">
+      <h2>Definir nova senha</h2>
+
+      <label for="nova-senha">Nova senha</label>
+      <input
+        id="nova-senha"
+        type="password"
+        placeholder="Digite a nova senha"
+      />
+
+      <label for="confirmar-nova-senha">Confirmar nova senha</label>
+      <input
+        id="confirmar-nova-senha"
+        type="password"
+        placeholder="Digite novamente"
+      />
+
+      <button onclick="alterarSenha()">
+        Salvar nova senha
+      </button>
+    </div>
+
+
     <div id="area-usuario" class="hidden">
 
       <h2>Área do usuário</h2>
@@ -214,18 +243,10 @@
       <h3>Meu perfil</h3>
 
       <label for="perfil-nome">Nome</label>
-      <input
-        id="perfil-nome"
-        type="text"
-        placeholder="Seu nome"
-      />
+      <input id="perfil-nome" type="text" placeholder="Seu nome" />
 
       <label for="perfil-username">Username</label>
-      <input
-        id="perfil-username"
-        type="text"
-        placeholder="Seu nome de usuário"
-      />
+      <input id="perfil-username" type="text" placeholder="Seu nome de usuário" />
 
       <button class="gold" onclick="salvarPerfil()">
         Salvar perfil
@@ -262,6 +283,9 @@
     const SUPABASE_KEY =
       "sb_publishable_ejDBDTRN1TAZRiEqmXqoBw_RKzjw0J3";
 
+    const SITE_URL =
+      "https://wowunknownzodiac.github.io/gerador-personagem/";
+
     const supabaseClient =
       supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -271,9 +295,17 @@
     }
 
 
-    function mostrarLogin() {
-      document.getElementById("form-login").classList.remove("hidden");
+    function esconderFormulariosAuth() {
+      document.getElementById("form-login").classList.add("hidden");
       document.getElementById("form-cadastro").classList.add("hidden");
+      document.getElementById("form-recuperacao").classList.add("hidden");
+    }
+
+
+    function mostrarLogin() {
+      esconderFormulariosAuth();
+
+      document.getElementById("form-login").classList.remove("hidden");
 
       document.getElementById("btn-tab-login").classList.remove("secondary");
       document.getElementById("btn-tab-cadastro").classList.add("secondary");
@@ -283,11 +315,27 @@
 
 
     function mostrarCadastro() {
+      esconderFormulariosAuth();
+
       document.getElementById("form-cadastro").classList.remove("hidden");
-      document.getElementById("form-login").classList.add("hidden");
 
       document.getElementById("btn-tab-cadastro").classList.remove("secondary");
       document.getElementById("btn-tab-login").classList.add("secondary");
+
+      exibirMensagem("");
+    }
+
+
+    function mostrarRecuperacao() {
+      esconderFormulariosAuth();
+
+      const emailLogin =
+        document.getElementById("login-email").value.trim();
+
+      document.getElementById("recuperacao-email").value =
+        emailLogin;
+
+      document.getElementById("form-recuperacao").classList.remove("hidden");
 
       exibirMensagem("");
     }
@@ -309,14 +357,12 @@
 
       const { data, error } =
         await supabaseClient.auth.signUp({
-          email: email,
+          email,
           password: senha
         });
 
       if (error) {
-        exibirMensagem(
-          "Erro ao criar conta:\n" + error.message
-        );
+        exibirMensagem("Erro ao criar conta:\n" + error.message);
         return;
       }
 
@@ -347,18 +393,87 @@
 
       const { error } =
         await supabaseClient.auth.signInWithPassword({
-          email: email,
+          email,
           password: senha
         });
 
       if (error) {
-        exibirMensagem(
-          "Não foi possível entrar:\n" + error.message
-        );
+        exibirMensagem("Não foi possível entrar:\n" + error.message);
         return;
       }
 
       exibirMensagem("Login realizado com sucesso.");
+      await atualizarTela();
+    }
+
+
+    async function enviarRecuperacaoSenha() {
+      const email =
+        document.getElementById("recuperacao-email").value.trim();
+
+      if (!email) {
+        exibirMensagem("Informe seu e-mail.");
+        return;
+      }
+
+      exibirMensagem("Enviando e-mail de recuperação...");
+
+      const { error } =
+        await supabaseClient.auth.resetPasswordForEmail(
+          email,
+          {
+            redirectTo: SITE_URL
+          }
+        );
+
+      if (error) {
+        exibirMensagem(
+          "Erro ao solicitar recuperação:\n" + error.message
+        );
+        return;
+      }
+
+      exibirMensagem(
+        "Se existir uma conta com esse e-mail, você receberá uma mensagem para redefinir a senha."
+      );
+    }
+
+
+    async function alterarSenha() {
+      const novaSenha =
+        document.getElementById("nova-senha").value;
+
+      const confirmacao =
+        document.getElementById("confirmar-nova-senha").value;
+
+      if (!novaSenha || !confirmacao) {
+        exibirMensagem("Preencha os dois campos de senha.");
+        return;
+      }
+
+      if (novaSenha !== confirmacao) {
+        exibirMensagem("As senhas não coincidem.");
+        return;
+      }
+
+      exibirMensagem("Alterando senha...");
+
+      const { error } =
+        await supabaseClient.auth.updateUser({
+          password: novaSenha
+        });
+
+      if (error) {
+        exibirMensagem(
+          "Não foi possível alterar a senha:\n" + error.message
+        );
+        return;
+      }
+
+      exibirMensagem("Senha alterada com sucesso.");
+
+      document.getElementById("area-nova-senha").classList.add("hidden");
+
       await atualizarTela();
     }
 
@@ -368,9 +483,7 @@
         await supabaseClient.auth.signOut();
 
       if (error) {
-        exibirMensagem(
-          "Erro ao sair:\n" + error.message
-        );
+        exibirMensagem("Erro ao sair:\n" + error.message);
         return;
       }
 
@@ -392,10 +505,7 @@
           .maybeSingle();
 
       if (error) {
-        console.error("Erro ao consultar perfil:", error);
-        exibirMensagem(
-          "Erro ao consultar perfil:\n" + error.message
-        );
+        exibirMensagem("Erro ao consultar perfil:\n" + error.message);
         return null;
       }
 
@@ -415,7 +525,6 @@
           .single();
 
       if (erroCriacao) {
-        console.error("Erro ao criar perfil:", erroCriacao);
         exibirMensagem(
           "Erro ao criar perfil:\n" + erroCriacao.message
         );
@@ -463,16 +572,14 @@
         await supabaseClient
           .from("profiles")
           .update({
-            nome: nome,
-            username: username,
+            nome,
+            username,
             updated_at: new Date().toISOString()
           })
           .eq("id", session.user.id);
 
       if (error) {
-        exibirMensagem(
-          "Erro ao salvar perfil:\n" + error.message
-        );
+        exibirMensagem("Erro ao salvar perfil:\n" + error.message);
         return;
       }
 
@@ -498,6 +605,13 @@
       const areaUsuario =
         document.getElementById("area-usuario");
 
+      const areaNovaSenha =
+        document.getElementById("area-nova-senha");
+
+      if (areaNovaSenha.dataset.recuperacao === "true") {
+        return;
+      }
+
       if (session && session.user) {
         areaAuth.classList.add("hidden");
         areaUsuario.classList.remove("hidden");
@@ -515,7 +629,25 @@
 
 
     supabaseClient.auth.onAuthStateChange(
-      async () => {
+      async (event) => {
+
+        if (event === "PASSWORD_RECOVERY") {
+          document.getElementById("area-auth").classList.add("hidden");
+          document.getElementById("area-usuario").classList.add("hidden");
+
+          const areaNovaSenha =
+            document.getElementById("area-nova-senha");
+
+          areaNovaSenha.classList.remove("hidden");
+          areaNovaSenha.dataset.recuperacao = "true";
+
+          exibirMensagem(
+            "Digite abaixo a nova senha da sua conta."
+          );
+
+          return;
+        }
+
         await atualizarTela();
       }
     );
